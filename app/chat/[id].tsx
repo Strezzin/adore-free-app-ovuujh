@@ -13,6 +13,7 @@ import {
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import RewardedAd from '@/components/RewardedAd';
 import { mockMatches, mockMessages, currentUser } from '@/data/mockUsers';
 import { Message } from '@/types/User';
 
@@ -21,6 +22,8 @@ export default function ChatScreen() {
   const match = mockMatches.find((m) => m.id === id);
   const [messages, setMessages] = useState<Message[]>(mockMessages[id as string] || []);
   const [inputText, setInputText] = useState('');
+  const [showRewardedAd, setShowRewardedAd] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -39,17 +42,37 @@ export default function ChatScreen() {
 
   const handleSend = () => {
     if (inputText.trim()) {
+      // Show ad before allowing message to be sent
+      setPendingMessage(inputText.trim());
+      setInputText('');
+      setShowRewardedAd(true);
+    }
+  };
+
+  const onAdWatched = () => {
+    // User watched the ad, now send the message
+    if (pendingMessage) {
       const newMessage: Message = {
         id: `msg-${Date.now()}`,
         senderId: currentUser.id,
         receiverId: match.user.id,
-        text: inputText.trim(),
+        text: pendingMessage,
         timestamp: new Date(),
         read: false,
       };
       setMessages([...messages, newMessage]);
-      setInputText('');
       console.log('Sent message:', newMessage.text);
+      setPendingMessage('');
+    }
+  };
+
+  const onAdClosed = () => {
+    setShowRewardedAd(false);
+    if (pendingMessage) {
+      // User cancelled, restore the message to input
+      setInputText(pendingMessage);
+      setPendingMessage('');
+      console.log('User cancelled sending message');
     }
   };
 
@@ -98,6 +121,12 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
+        <View style={styles.adNoticeContainer}>
+          <Text style={styles.adNoticeText}>
+            💰 Watch an ad to send each message
+          </Text>
+        </View>
+
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -128,6 +157,14 @@ export default function ChatScreen() {
             />
           </Pressable>
         </View>
+
+        {/* Rewarded Ad Modal */}
+        <RewardedAd
+          visible={showRewardedAd}
+          onAdWatched={onAdWatched}
+          onAdClosed={onAdClosed}
+          adType="message"
+        />
       </KeyboardAvoidingView>
     </>
   );
@@ -143,6 +180,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
     marginTop: 32,
+  },
+  adNoticeContainer: {
+    backgroundColor: colors.highlight,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.primary,
+  },
+  adNoticeText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   messagesList: {
     padding: 16,

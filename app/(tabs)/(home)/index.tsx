@@ -5,22 +5,45 @@ import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import ProfileCard from '@/components/ProfileCard';
 import AdBanner from '@/components/AdBanner';
+import RewardedAd from '@/components/RewardedAd';
 import { mockUsers } from '@/data/mockUsers';
 import { User } from '@/types/User';
 
 export default function HomeScreen() {
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showRewardedAd, setShowRewardedAd] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'like' | 'pass' | null>(null);
 
   const handleLike = () => {
-    console.log('Liked:', users[currentIndex].name);
-    Alert.alert('It&apos;s a Match! 💕', `You and ${users[currentIndex].name} liked each other!`);
-    moveToNext();
+    // Show ad before allowing match
+    setPendingAction('like');
+    setShowRewardedAd(true);
   };
 
   const handlePass = () => {
-    console.log('Passed:', users[currentIndex].name);
+    // Show ad before allowing pass
+    setPendingAction('pass');
+    setShowRewardedAd(true);
+  };
+
+  const onAdWatched = () => {
+    // User watched the ad, now execute the pending action
+    if (pendingAction === 'like') {
+      console.log('Liked:', users[currentIndex].name);
+      Alert.alert('It&apos;s a Match! 💕', `You and ${users[currentIndex].name} liked each other!`);
+    } else if (pendingAction === 'pass') {
+      console.log('Passed:', users[currentIndex].name);
+    }
     moveToNext();
+    setPendingAction(null);
+  };
+
+  const onAdClosed = () => {
+    setShowRewardedAd(false);
+    if (!pendingAction) {
+      console.log('User cancelled ad');
+    }
   };
 
   const moveToNext = () => {
@@ -64,6 +87,9 @@ export default function HomeScreen() {
                 <Text style={styles.statsText}>
                   {currentIndex + 1} of {users.length} profiles
                 </Text>
+                <Text style={styles.adNotice}>
+                  💰 Watch an ad to match or pass
+                </Text>
               </View>
             </>
           ) : (
@@ -75,6 +101,14 @@ export default function HomeScreen() {
             </View>
           )}
         </ScrollView>
+
+        {/* Rewarded Ad Modal */}
+        <RewardedAd
+          visible={showRewardedAd}
+          onAdWatched={onAdWatched}
+          onAdClosed={onAdClosed}
+          adType="match"
+        />
       </View>
     </>
   );
@@ -103,6 +137,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  adNotice: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+    marginTop: 8,
   },
   emptyContainer: {
     flex: 1,

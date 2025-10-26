@@ -1,31 +1,43 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, Image, Pressable, TextInput, Alert } from 'react-native';
-import { Stack } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Image,
+  Pressable,
+  TextInput,
+  Alert,
+} from 'react-native';
+import { Stack, router } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
 import AdBanner from '@/components/AdBanner';
+import { IconSymbol } from '@/components/IconSymbol';
 import { currentUser } from '@/data/mockUsers';
 
 export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(currentUser.name);
-  const [age, setAge] = useState(currentUser.age.toString());
   const [bio, setBio] = useState(currentUser.bio);
-  const [location, setLocation] = useState(currentUser.location);
+  const [age, setAge] = useState(currentUser.age.toString());
 
   const handleSave = () => {
-    console.log('Saving profile:', { name, age, bio, location });
+    console.log('Profile saved:', { name, bio, age });
     Alert.alert('Success', 'Profile updated successfully!');
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setName(currentUser.name);
-    setAge(currentUser.age.toString());
     setBio(currentUser.bio);
-    setLocation(currentUser.location);
+    setAge(currentUser.age.toString());
     setIsEditing(false);
+  };
+
+  const handleAdminAccess = () => {
+    router.push('/admin/login');
   };
 
   return (
@@ -35,6 +47,13 @@ export default function ProfileScreen() {
           options={{
             title: 'Profile',
             headerLargeTitle: true,
+            headerRight: () => (
+              <Pressable onPress={() => setIsEditing(!isEditing)}>
+                <Text style={{ color: colors.primary, fontSize: 16 }}>
+                  {isEditing ? 'Cancel' : 'Edit'}
+                </Text>
+              </Pressable>
+            ),
           }}
         />
       )}
@@ -43,40 +62,25 @@ export default function ProfileScreen() {
           style={styles.scrollView}
           contentContainerStyle={[
             styles.contentContainer,
-            Platform.OS !== 'ios' && styles.contentContainerWithTabBar
+            Platform.OS !== 'ios' && styles.contentContainerWithTabBar,
           ]}
           showsVerticalScrollIndicator={false}
         >
+          {/* Profile Photo */}
           <View style={styles.photoContainer}>
             <Image
               source={{ uri: currentUser.photos[0] }}
               style={styles.photo}
-              resizeMode="cover"
             />
-            <Pressable style={styles.editPhotoButton}>
-              <IconSymbol name="camera.fill" size={20} color="#FFFFFF" />
-            </Pressable>
+            {isEditing && (
+              <Pressable style={styles.editPhotoButton}>
+                <IconSymbol name="camera.fill" size={24} color="#FFFFFF" />
+              </Pressable>
+            )}
           </View>
 
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Basic Info</Text>
-              {!isEditing ? (
-                <Pressable onPress={() => setIsEditing(true)} style={styles.editButton}>
-                  <IconSymbol name="pencil" size={20} color={colors.primary} />
-                </Pressable>
-              ) : (
-                <View style={styles.editActions}>
-                  <Pressable onPress={handleCancel} style={styles.cancelButton}>
-                    <Text style={styles.cancelText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable onPress={handleSave} style={styles.saveButton}>
-                    <Text style={styles.saveText}>Save</Text>
-                  </Pressable>
-                </View>
-              )}
-            </View>
-
+          {/* Profile Info */}
+          <View style={styles.infoSection}>
             {isEditing ? (
               <>
                 <View style={styles.inputGroup}>
@@ -89,6 +93,7 @@ export default function ProfileScreen() {
                     placeholderTextColor={colors.textSecondary}
                   />
                 </View>
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Age</Text>
                   <TextInput
@@ -96,52 +101,45 @@ export default function ProfileScreen() {
                     value={age}
                     onChangeText={setAge}
                     placeholder="Your age"
-                    keyboardType="numeric"
                     placeholderTextColor={colors.textSecondary}
+                    keyboardType="number-pad"
                   />
                 </View>
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Bio</Text>
                   <TextInput
-                    style={[styles.input, styles.textArea]}
+                    style={[styles.input, styles.bioInput]}
                     value={bio}
                     onChangeText={setBio}
                     placeholder="Tell us about yourself"
+                    placeholderTextColor={colors.textSecondary}
                     multiline
                     numberOfLines={4}
-                    placeholderTextColor={colors.textSecondary}
                   />
                 </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Location</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={location}
-                    onChangeText={setLocation}
-                    placeholder="Your location"
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                </View>
+
+                <Pressable style={styles.saveButton} onPress={handleSave}>
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </Pressable>
               </>
             ) : (
               <>
-                <View style={styles.infoRow}>
-                  <IconSymbol name="person.fill" size={20} color={colors.textSecondary} />
-                  <Text style={styles.infoText}>{name}, {age}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <IconSymbol name="location.fill" size={20} color={colors.textSecondary} />
-                  <Text style={styles.infoText}>{location}</Text>
-                </View>
-                <View style={styles.bioContainer}>
-                  <Text style={styles.bioText}>{bio}</Text>
-                </View>
+                <Text style={styles.name}>
+                  {currentUser.name}, {currentUser.age}
+                </Text>
+                <Text style={styles.location}>
+                  <IconSymbol name="location.fill" size={16} color={colors.textSecondary} />
+                  {' '}{currentUser.location}
+                </Text>
+                <Text style={styles.bio}>{currentUser.bio}</Text>
               </>
             )}
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Interests</Text>
+          {/* Interests */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Interests</Text>
             <View style={styles.interestsContainer}>
               {currentUser.interests.map((interest, index) => (
                 <View key={index} style={styles.interestTag}>
@@ -151,28 +149,30 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Settings</Text>
-            <Pressable style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <IconSymbol name="bell.fill" size={20} color={colors.textSecondary} />
-                <Text style={styles.settingText}>Notifications</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          {/* Admin Access Button */}
+          <Pressable style={styles.adminButton} onPress={handleAdminAccess}>
+            <IconSymbol name="lock.shield.fill" size={20} color={colors.primary} />
+            <Text style={styles.adminButtonText}>Admin Access</Text>
+            <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+          </Pressable>
+
+          {/* Settings */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Settings</Text>
+            <Pressable style={styles.settingItem}>
+              <IconSymbol name="bell.fill" size={20} color={colors.text} />
+              <Text style={styles.settingText}>Notifications</Text>
+              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
             </Pressable>
-            <Pressable style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
-                <Text style={styles.settingText}>Privacy</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <Pressable style={styles.settingItem}>
+              <IconSymbol name="lock.fill" size={20} color={colors.text} />
+              <Text style={styles.settingText}>Privacy</Text>
+              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
             </Pressable>
-            <Pressable style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <IconSymbol name="questionmark.circle.fill" size={20} color={colors.textSecondary} />
-                <Text style={styles.settingText}>Help & Support</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <Pressable style={styles.settingItem}>
+              <IconSymbol name="questionmark.circle.fill" size={20} color={colors.text} />
+              <Text style={styles.settingText}>Help & Support</Text>
+              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
             </Pressable>
           </View>
 
@@ -200,13 +200,13 @@ const styles = StyleSheet.create({
   photoContainer: {
     alignItems: 'center',
     marginBottom: 24,
-    position: 'relative',
   },
   photo: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: colors.highlight,
+    borderWidth: 3,
+    borderColor: colors.primary,
   },
   editPhotoButton: {
     position: 'absolute',
@@ -221,69 +221,27 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: colors.background,
   },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
+  infoSection: {
+    marginBottom: 24,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 18,
+  name: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: colors.text,
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  editButton: {
-    padding: 4,
-  },
-  editActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  cancelText: {
+  location: {
+    fontSize: 16,
     color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 16,
   },
-  saveButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  saveText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 12,
-  },
-  infoText: {
+  bio: {
     fontSize: 16,
     color: colors.text,
-  },
-  bioContainer: {
-    marginTop: 8,
-  },
-  bioText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   inputGroup: {
     marginBottom: 16,
@@ -295,50 +253,86 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.highlight,
   },
-  textArea: {
+  bioInput: {
     height: 100,
     textAlignVertical: 'top',
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
   },
   interestsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
+    marginHorizontal: -4,
   },
   interestTag: {
     backgroundColor: colors.highlight,
+    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    margin: 4,
   },
   interestText: {
-    color: colors.text,
     fontSize: 14,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  adminButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.highlight,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  adminButtonText: {
+    flex: 1,
+    fontSize: 16,
     fontWeight: '600',
+    color: colors.primary,
+    marginLeft: 12,
   },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.background,
-  },
-  settingLeft: {
+  settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
   },
   settingText: {
+    flex: 1,
     fontSize: 16,
     color: colors.text,
+    marginLeft: 12,
   },
 });
