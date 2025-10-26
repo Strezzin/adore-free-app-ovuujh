@@ -8,10 +8,16 @@ import {
   Pressable,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from './IconSymbol';
 import { useAdRevenue } from '@/contexts/AdRevenueContext';
+import {
+  RewardedAd as GoogleRewardedAd,
+  RewardedAdEventType,
+  TestIds,
+} from 'react-native-google-mobile-ads';
 
 interface RewardedAdProps {
   visible: boolean;
@@ -22,6 +28,17 @@ interface RewardedAdProps {
 
 const { width, height } = Dimensions.get('window');
 
+// AdMob Rewarded Ad Unit IDs
+// IMPORTANT: Replace these with your actual Ad Unit IDs from AdMob console
+const ADMOB_REWARDED_AD_UNIT_ID = Platform.select({
+  ios: __DEV__ ? TestIds.REWARDED : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
+  android: __DEV__ ? TestIds.REWARDED : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
+  default: TestIds.REWARDED,
+});
+
+// Create rewarded ad instance
+let rewardedAd: GoogleRewardedAd | null = null;
+
 export default function RewardedAd({
   visible,
   onAdWatched,
@@ -30,27 +47,93 @@ export default function RewardedAd({
 }: RewardedAdProps) {
   const { trackAdView } = useAdRevenue();
   const [isLoading, setIsLoading] = useState(true);
+  const [adLoaded, setAdLoaded] = useState(false);
+  const [adError, setAdError] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [canClose, setCanClose] = useState(false);
+  const [rewardEarned, setRewardEarned] = useState(false);
 
+  // Initialize and load rewarded ad
   useEffect(() => {
-    if (visible) {
-      setIsLoading(true);
-      setCountdown(5);
-      setCanClose(false);
-
-      // Simulate ad loading
-      const loadTimer = setTimeout(() => {
-        setIsLoading(false);
-        console.log('Rewarded ad loaded');
-      }, 1500);
-
-      return () => clearTimeout(loadTimer);
+    if (Platform.OS === 'web') {
+      // Web fallback - use simulated ad
+      setIsLoading(false);
+      setAdLoaded(true);
+      return;
     }
-  }, [visible]);
 
+    if (visible && !rewardedAd) {
+      console.log('Creating rewarded ad instance...');
+      rewardedAd = GoogleRewardedAd.createForAdRequest(ADMOB_REWARDED_AD_UNIT_ID, {
+        requestNonPersonalizedAdsOnly: false,
+      });
+
+      // Set up event listeners
+      const loadedListener = rewardedAd.addAdEventListener(
+        RewardedAdEventType.LOADED,
+        () => {
+          console.log('Rewarded ad loaded successfully');
+          setAdLoaded(true);
+          setIsLoading(false);
+          setAdError(false);
+        }
+      );
+
+      const earnedRewardListener = rewardedAd.addAdEventListener(
+        RewardedAdEventType.EARNED_REWARD,
+        (reward) => {
+          console.log('User earned reward:', reward);
+          setRewardEarned(true);
+          trackAdView(adType);
+        }
+      );
+
+      const closedListener = rewardedAd.addAdEventListener(
+        RewardedAdEventType.CLOSED,
+        () => {
+          console.log('Rewarded ad closed');
+          if (rewardEarned) {
+            onAdWatched();
+          }
+          onAdClosed();
+          // Clean up for next ad
+          rewardedAd = null;
+          setRewardEarned(false);
+        }
+      );
+
+      const errorListener = rewardedAd.addAdEventListener(
+        RewardedAdEventType.ERROR,
+        (error) => {
+          console.log('Rewarded ad error:', error);
+          setAdError(true);
+          setIsLoading(false);
+        }
+      );
+
+      // Load the ad
+      rewardedAd.load();
+
+      return () => {
+        loadedListener();
+        earnedRewardListener();
+        closedListener();
+        errorListener();
+      };
+    }
+  }, [visible, adType, trackAdView, onAdWatched, onAdClosed, rewardEarned]);
+
+  // Show ad when loaded
   useEffect(() => {
-    if (!isLoading && countdown > 0) {
+    if (visible && adLoaded && rewardedAd && Platform.OS !== 'web') {
+      console.log('Showing rewarded ad...');
+      rewardedAd.show();
+    }
+  }, [visible, adLoaded]);
+
+  // Web/Fallback countdown timer
+  useEffect(() => {
+    if (Platform.OS === 'web' && visible && !isLoading && countdown > 0) {
       const timer = setTimeout(() => {
         setCountdown(countdown - 1);
       }, 1000);
@@ -59,23 +142,48 @@ export default function RewardedAd({
     } else if (countdown === 0 && !canClose) {
       setCanClose(true);
       console.log('Ad watched completely - reward granted');
-      // Track ad view for revenue
       trackAdView(adType);
     }
-  }, [countdown, isLoading, canClose, adType, trackAdView]);
+  }, [countdown, isLoading, canClose, adType, trackAdView, visible]);
 
   const handleClose = () => {
-    if (canClose) {
+    if (canClose || Platform.OS === 'web') {
       onAdWatched();
       onAdClosed();
     }
   };
 
   const handleSkip = () => {
-    console.log('User attempted to skip ad');
+    console.log('User cancelled ad');
     onAdClosed();
+    if (rewardedAd) {
+      rewardedAd = null;
+    }
   };
 
+  // For native platforms, the ad is shown natively, so we don't need to render anything
+  if (Platform.OS !== 'web' && !adError) {
+    return (
+      <Modal
+        visible={visible && isLoading}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleSkip}
+      >
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Loading ad...</Text>
+            <Pressable style={styles.cancelButton} onPress={handleSkip}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
+  // Web fallback or error state
   return (
     <Modal
       visible={visible}
@@ -84,14 +192,25 @@ export default function RewardedAd({
       onRequestClose={handleSkip}
     >
       <View style={styles.container}>
-        {isLoading ? (
+        {isLoading && !adError ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Loading ad...</Text>
           </View>
+        ) : adError ? (
+          <View style={styles.errorContainer}>
+            <IconSymbol name="exclamationmark.triangle" size={60} color={colors.primary} />
+            <Text style={styles.errorTitle}>Ad Unavailable</Text>
+            <Text style={styles.errorText}>
+              Unable to load ad at this time. Please try again later.
+            </Text>
+            <Pressable style={styles.errorButton} onPress={handleSkip}>
+              <Text style={styles.errorButtonText}>Close</Text>
+            </Pressable>
+          </View>
         ) : (
           <>
-            {/* Ad Content */}
+            {/* Web Fallback Ad Content */}
             <View style={styles.adContent}>
               <View style={styles.adBadge}>
                 <Text style={styles.adBadgeText}>SPONSORED AD</Text>
@@ -148,13 +267,63 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingContainer: {
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingContainer: {
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    padding: 32,
+    borderRadius: 16,
+  },
   loadingText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 16,
     marginTop: 16,
+  },
+  cancelButton: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: colors.highlight,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginTop: 12,
+    opacity: 0.8,
+  },
+  errorButton: {
+    marginTop: 32,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 25,
+  },
+  errorButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   adContent: {
     flex: 1,

@@ -1,5 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Platform } from 'react-native';
+import mobileAds from 'react-native-google-mobile-ads';
 
 interface AdRevenueData {
   totalViews: number;
@@ -8,19 +10,29 @@ interface AdRevenueData {
   todayRevenue: number;
   matchAdViews: number;
   messageAdViews: number;
+  bannerAdViews: number;
+  interstitialAdViews: number;
 }
 
 interface AdRevenueContextType {
   adData: AdRevenueData;
-  trackAdView: (adType: 'match' | 'message') => void;
+  trackAdView: (adType: 'match' | 'message' | 'banner' | 'interstitial') => void;
   resetDailyStats: () => void;
+  isAdMobInitialized: boolean;
 }
 
 const AdRevenueContext = createContext<AdRevenueContextType | undefined>(undefined);
 
-const AD_REVENUE_PER_VIEW = 0.05; // $0.05 per ad view
+// Revenue rates per ad type (estimated)
+const AD_REVENUE_RATES = {
+  match: 0.10,        // Rewarded ads pay more
+  message: 0.10,      // Rewarded ads pay more
+  banner: 0.01,       // Banner ads pay less
+  interstitial: 0.05, // Interstitial ads moderate
+};
 
 export function AdRevenueProvider({ children }: { children: React.ReactNode }) {
+  const [isAdMobInitialized, setIsAdMobInitialized] = useState(false);
   const [adData, setAdData] = useState<AdRevenueData>({
     totalViews: 0,
     totalRevenue: 0,
@@ -28,27 +40,66 @@ export function AdRevenueProvider({ children }: { children: React.ReactNode }) {
     todayRevenue: 0,
     matchAdViews: 0,
     messageAdViews: 0,
+    bannerAdViews: 0,
+    interstitialAdViews: 0,
   });
 
-  const trackAdView = (adType: 'match' | 'message') => {
+  // Initialize AdMob
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      console.log('Initializing AdMob...');
+      mobileAds()
+        .initialize()
+        .then((adapterStatuses) => {
+          console.log('AdMob initialized successfully:', adapterStatuses);
+          setIsAdMobInitialized(true);
+        })
+        .catch((error) => {
+          console.error('AdMob initialization error:', error);
+        });
+
+      // Set request configuration
+      mobileAds()
+        .setRequestConfiguration({
+          // Maximum Ad Content Rating
+          maxAdContentRating: 'T',
+          // Tag for child-directed treatment
+          tagForChildDirectedTreatment: false,
+          // Tag for under age of consent
+          tagForUnderAgeOfConsent: false,
+        })
+        .then(() => {
+          console.log('AdMob request configuration set');
+        });
+    } else {
+      setIsAdMobInitialized(true); // Web doesn't need initialization
+    }
+  }, []);
+
+  const trackAdView = (adType: 'match' | 'message' | 'banner' | 'interstitial') => {
+    const revenue = AD_REVENUE_RATES[adType];
+    
     setAdData((prev) => {
       const newData = {
         ...prev,
         totalViews: prev.totalViews + 1,
-        totalRevenue: prev.totalRevenue + AD_REVENUE_PER_VIEW,
+        totalRevenue: prev.totalRevenue + revenue,
         todayViews: prev.todayViews + 1,
-        todayRevenue: prev.todayRevenue + AD_REVENUE_PER_VIEW,
+        todayRevenue: prev.todayRevenue + revenue,
         matchAdViews: adType === 'match' ? prev.matchAdViews + 1 : prev.matchAdViews,
         messageAdViews: adType === 'message' ? prev.messageAdViews + 1 : prev.messageAdViews,
+        bannerAdViews: adType === 'banner' ? prev.bannerAdViews + 1 : prev.bannerAdViews,
+        interstitialAdViews: adType === 'interstitial' ? prev.interstitialAdViews + 1 : prev.interstitialAdViews,
       };
 
       console.log('Ad tracked:', {
         type: adType,
+        revenue: revenue.toFixed(2),
         totalRevenue: newData.totalRevenue.toFixed(2),
         totalViews: newData.totalViews,
       });
 
-      // In production, send this data to your backend
+      // In production, send this data to your backend for analytics
       // sendToBackend(newData);
 
       return newData;
@@ -83,7 +134,7 @@ export function AdRevenueProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AdRevenueContext.Provider value={{ adData, trackAdView, resetDailyStats }}>
+    <AdRevenueContext.Provider value={{ adData, trackAdView, resetDailyStats, isAdMobInitialized }}>
       {children}
     </AdRevenueContext.Provider>
   );

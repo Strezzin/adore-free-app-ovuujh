@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { Stack, router } from 'expo-router';
+import { colors } from '@/styles/commonStyles';
 import {
   View,
   Text,
@@ -8,37 +10,52 @@ import {
   Pressable,
   Alert,
   Platform,
+  Linking,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useAdRevenue } from '@/contexts/AdRevenueContext';
 
 export default function AdminDashboardScreen() {
-  const { adData } = useAdRevenue();
+  const { adData, isAdMobInitialized } = useAdRevenue();
   const [paymentConnected, setPaymentConnected] = useState(false);
 
   const handleConnectPayment = () => {
     Alert.alert(
       'Connect Payment Method',
-      'To collect ad revenue, you need to integrate a payment provider like Stripe.\n\n' +
-      'Steps:\n' +
-      '1. Create a Stripe account\n' +
-      '2. Get your API keys\n' +
-      '3. Set up a backend server\n' +
-      '4. Configure automatic payouts\n\n' +
-      'Would you like to see the integration guide?',
+      'To receive ad revenue, you need to:\n\n' +
+      '1. Set up AdMob account at admob.google.com\n' +
+      '2. Add payment information in AdMob console\n' +
+      '3. Configure your bank account or PayPal\n' +
+      '4. Replace test ad unit IDs with your production IDs\n\n' +
+      'Would you like to open AdMob console?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'View Guide',
+          text: 'Open AdMob',
           onPress: () => {
-            console.log('Opening payment integration guide');
-            Alert.alert(
-              'Payment Integration',
-              'Install Stripe:\nnpx expo install @stripe/stripe-react-native\n\n' +
-              'Then configure your backend to handle payouts to your debit card.'
-            );
+            Linking.openURL('https://admob.google.com');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleFacebookAudienceNetwork = () => {
+    Alert.alert(
+      'Facebook Audience Network',
+      'To enable Facebook Audience Network:\n\n' +
+      '1. Create a Facebook Developer account\n' +
+      '2. Set up Audience Network in Meta Business Suite\n' +
+      '3. Create placement IDs for your ads\n' +
+      '4. Update app.json with your Facebook App ID\n' +
+      '5. Implement Facebook ad components\n\n' +
+      'Would you like to open Facebook for Developers?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Facebook',
+          onPress: () => {
+            Linking.openURL('https://developers.facebook.com/docs/audience-network');
           },
         },
       ]
@@ -52,11 +69,14 @@ export default function AdminDashboardScreen() {
         text: 'Logout',
         style: 'destructive',
         onPress: () => {
-          console.log('Admin logged out');
-          router.back();
+          router.replace('/admin/login');
         },
       },
     ]);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `$${amount.toFixed(2)}`;
   };
 
   return (
@@ -64,140 +84,196 @@ export default function AdminDashboardScreen() {
       <Stack.Screen
         options={{
           title: 'Admin Dashboard',
-          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
           headerRight: () => (
-            <Pressable onPress={handleLogout}>
-              <Text style={{ color: colors.primary, fontSize: 16 }}>Logout</Text>
+            <Pressable onPress={handleLogout} style={{ marginRight: 8 }}>
+              <IconSymbol name="rectangle.portrait.and.arrow.right" size={24} color={colors.text} />
             </Pressable>
           ),
         }}
       />
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Revenue Dashboard</Text>
-          <Text style={styles.subtitle}>Track your ad earnings</Text>
-        </View>
-
-        {/* Payment Status */}
-        <View style={[styles.card, !paymentConnected && styles.warningCard]}>
-          <View style={styles.cardHeader}>
+      <ScrollView style={styles.container}>
+        {/* AdMob Status */}
+        <View style={styles.statusCard}>
+          <View style={styles.statusHeader}>
             <IconSymbol
-              name={paymentConnected ? 'checkmark.circle.fill' : 'exclamationmark.triangle.fill'}
+              name={isAdMobInitialized ? 'checkmark.circle.fill' : 'exclamationmark.circle.fill'}
               size={24}
-              color={paymentConnected ? '#4CAF50' : '#FF9800'}
+              color={isAdMobInitialized ? '#4CAF50' : '#FF9800'}
             />
-            <Text style={styles.cardTitle}>Payment Method</Text>
-          </View>
-          {paymentConnected ? (
-            <Text style={styles.cardText}>
-              ✓ Connected to Stripe{'\n'}
-              Payouts: Weekly to •••• 1234
+            <Text style={styles.statusTitle}>
+              AdMob Status: {isAdMobInitialized ? 'Active' : 'Initializing'}
             </Text>
-          ) : (
-            <>
-              <Text style={styles.cardText}>
-                No payment method connected yet
-              </Text>
-              <Pressable style={styles.connectButton} onPress={handleConnectPayment}>
-                <Text style={styles.connectButtonText}>Connect Debit Card</Text>
-              </Pressable>
-            </>
+          </View>
+          {Platform.OS === 'web' && (
+            <Text style={styles.statusNote}>
+              Note: Ads are only displayed on mobile devices (iOS/Android)
+            </Text>
           )}
         </View>
 
-        {/* Revenue Stats */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <IconSymbol name="dollarsign.circle.fill" size={32} color={colors.primary} />
-            <Text style={styles.statValue}>${adData.totalRevenue.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Total Revenue</Text>
+        {/* Revenue Overview */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Revenue Overview</Text>
+          
+          <View style={styles.revenueRow}>
+            <View style={styles.revenueItem}>
+              <Text style={styles.revenueLabel}>Total Revenue</Text>
+              <Text style={styles.revenueAmount}>
+                {formatCurrency(adData.totalRevenue)}
+              </Text>
+            </View>
+            <View style={styles.revenueItem}>
+              <Text style={styles.revenueLabel}>Today&apos;s Revenue</Text>
+              <Text style={styles.revenueAmount}>
+                {formatCurrency(adData.todayRevenue)}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.statCard}>
-            <IconSymbol name="eye.fill" size={32} color={colors.primary} />
-            <Text style={styles.statValue}>{adData.totalViews}</Text>
-            <Text style={styles.statLabel}>Total Ad Views</Text>
-          </View>
+          <View style={styles.divider} />
 
-          <View style={styles.statCard}>
-            <IconSymbol name="calendar" size={32} color={colors.primary} />
-            <Text style={styles.statValue}>${adData.todayRevenue.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Today&apos;s Revenue</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <IconSymbol name="chart.bar.fill" size={32} color={colors.primary} />
-            <Text style={styles.statValue}>{adData.todayViews}</Text>
-            <Text style={styles.statLabel}>Today&apos;s Views</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{adData.totalViews}</Text>
+              <Text style={styles.statLabel}>Total Ad Views</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{adData.todayViews}</Text>
+              <Text style={styles.statLabel}>Today&apos;s Views</Text>
+            </View>
           </View>
         </View>
 
         {/* Ad Type Breakdown */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Ad Type Breakdown</Text>
-          <View style={styles.breakdownRow}>
-            <View style={styles.breakdownItem}>
-              <IconSymbol name="heart.fill" size={20} color={colors.primary} />
-              <Text style={styles.breakdownLabel}>Match Ads</Text>
+          <Text style={styles.cardTitle}>Ad Performance by Type</Text>
+          
+          <View style={styles.adTypeRow}>
+            <View style={styles.adTypeItem}>
+              <IconSymbol name="heart.fill" size={24} color={colors.primary} />
+              <Text style={styles.adTypeLabel}>Match Ads</Text>
+              <Text style={styles.adTypeValue}>{adData.matchAdViews}</Text>
+              <Text style={styles.adTypeRevenue}>
+                {formatCurrency(adData.matchAdViews * 0.10)}
+              </Text>
             </View>
-            <Text style={styles.breakdownValue}>{adData.matchAdViews} views</Text>
+
+            <View style={styles.adTypeItem}>
+              <IconSymbol name="message.fill" size={24} color={colors.primary} />
+              <Text style={styles.adTypeLabel}>Message Ads</Text>
+              <Text style={styles.adTypeValue}>{adData.messageAdViews}</Text>
+              <Text style={styles.adTypeRevenue}>
+                {formatCurrency(adData.messageAdViews * 0.10)}
+              </Text>
+            </View>
           </View>
-          <View style={styles.breakdownRow}>
-            <View style={styles.breakdownItem}>
-              <IconSymbol name="message.fill" size={20} color={colors.primary} />
-              <Text style={styles.breakdownLabel}>Message Ads</Text>
+
+          <View style={styles.adTypeRow}>
+            <View style={styles.adTypeItem}>
+              <IconSymbol name="rectangle.fill" size={24} color={colors.primary} />
+              <Text style={styles.adTypeLabel}>Banner Ads</Text>
+              <Text style={styles.adTypeValue}>{adData.bannerAdViews}</Text>
+              <Text style={styles.adTypeRevenue}>
+                {formatCurrency(adData.bannerAdViews * 0.01)}
+              </Text>
             </View>
-            <Text style={styles.breakdownValue}>{adData.messageAdViews} views</Text>
+
+            <View style={styles.adTypeItem}>
+              <IconSymbol name="square.fill" size={24} color={colors.primary} />
+              <Text style={styles.adTypeLabel}>Interstitial</Text>
+              <Text style={styles.adTypeValue}>{adData.interstitialAdViews}</Text>
+              <Text style={styles.adTypeRevenue}>
+                {formatCurrency(adData.interstitialAdViews * 0.05)}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {/* Revenue Info */}
-        <View style={styles.infoCard}>
-          <IconSymbol name="info.circle.fill" size={24} color={colors.primary} />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>How Ad Revenue Works</Text>
-            <Text style={styles.infoText}>
-              - Users watch ads before matching or messaging{'\n'}
-              - You earn approximately $0.05 per ad view{'\n'}
-              - Revenue is tracked in real-time{'\n'}
-              - Payouts are processed weekly via Stripe{'\n'}
-              - Connect your debit card to receive payments
-            </Text>
-          </View>
-        </View>
-
-        {/* Integration Guide */}
+        {/* Payment Setup */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Next Steps</Text>
-          <View style={styles.stepItem}>
-            <View style={styles.stepNumber}>
-              <Text style={styles.stepNumberText}>1</Text>
-            </View>
-            <Text style={styles.stepText}>
-              Connect your payment method to receive revenue
+          <Text style={styles.cardTitle}>Payment Setup</Text>
+          
+          <Pressable
+            style={[styles.button, paymentConnected && styles.buttonConnected]}
+            onPress={handleConnectPayment}
+          >
+            <IconSymbol
+              name={paymentConnected ? 'checkmark.circle.fill' : 'creditcard.fill'}
+              size={24}
+              color="#FFFFFF"
+            />
+            <Text style={styles.buttonText}>
+              {paymentConnected ? 'Payment Connected' : 'Connect AdMob Payment'}
             </Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.button, styles.buttonSecondary]}
+            onPress={handleFacebookAudienceNetwork}
+          >
+            <IconSymbol name="globe" size={24} color={colors.text} />
+            <Text style={[styles.buttonText, styles.buttonTextSecondary]}>
+              Setup Facebook Audience Network
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Setup Instructions */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Setup Instructions</Text>
+          
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>1</Text>
+            </View>
+            <View style={styles.instructionContent}>
+              <Text style={styles.instructionTitle}>Create AdMob Account</Text>
+              <Text style={styles.instructionText}>
+                Sign up at admob.google.com and create your app
+              </Text>
+            </View>
           </View>
-          <View style={styles.stepItem}>
-            <View style={styles.stepNumber}>
-              <Text style={styles.stepNumberText}>2</Text>
+
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>2</Text>
             </View>
-            <Text style={styles.stepText}>
-              Integrate real ad networks (AdMob, Facebook Audience Network)
-            </Text>
+            <View style={styles.instructionContent}>
+              <Text style={styles.instructionTitle}>Get Ad Unit IDs</Text>
+              <Text style={styles.instructionText}>
+                Create ad units and replace test IDs in the code
+              </Text>
+            </View>
           </View>
-          <View style={styles.stepItem}>
-            <View style={styles.stepNumber}>
-              <Text style={styles.stepNumberText}>3</Text>
+
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>3</Text>
             </View>
-            <Text style={styles.stepText}>
-              Set up backend server for payment processing
-            </Text>
+            <View style={styles.instructionContent}>
+              <Text style={styles.instructionTitle}>Add Payment Method</Text>
+              <Text style={styles.instructionText}>
+                Configure bank account or PayPal in AdMob
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>4</Text>
+            </View>
+            <View style={styles.instructionContent}>
+              <Text style={styles.instructionTitle}>Build & Deploy</Text>
+              <Text style={styles.instructionText}>
+                Create production build and submit to app stores
+              </Text>
+            </View>
           </View>
         </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </>
   );
@@ -208,158 +284,169 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  contentContainer: {
+  statusCard: {
+    backgroundColor: colors.highlight,
+    margin: 16,
     padding: 16,
-    paddingBottom: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  warningCard: {
-    borderWidth: 2,
-    borderColor: '#FF9800',
-  },
-  cardHeader: {
+  statusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    gap: 12,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  statusTitle: {
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
-    marginLeft: 8,
   },
-  cardText: {
+  statusNote: {
     fontSize: 14,
     color: colors.textSecondary,
-    lineHeight: 20,
+    marginTop: 8,
   },
-  connectButton: {
-    backgroundColor: colors.primary,
+  card: {
+    backgroundColor: colors.highlight,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 20,
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginTop: 12,
-    alignItems: 'center',
   },
-  connectButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  cardTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -8,
+    color: colors.text,
     marginBottom: 16,
   },
-  statCard: {
-    width: '50%',
-    padding: 8,
+  revenueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  statCardInner: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
+  revenueItem: {
+    flex: 1,
+  },
+  revenueLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  revenueAmount: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.primary,
+    opacity: 0.2,
+    marginVertical: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
     alignItems: 'center',
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
-    marginTop: 8,
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
   },
-  breakdownRow: {
+  adTypeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.highlight,
+    marginBottom: 16,
   },
-  breakdownItem: {
+  adTypeItem: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    marginHorizontal: 4,
+  },
+  adTypeLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  adTypeValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  adTypeRevenue: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  button: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 12,
   },
-  breakdownLabel: {
+  buttonConnected: {
+    backgroundColor: '#4CAF50',
+  },
+  buttonSecondary: {
+    backgroundColor: colors.background,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  buttonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    color: colors.text,
-    marginLeft: 8,
+    fontWeight: '600',
   },
-  breakdownValue: {
+  buttonTextSecondary: {
+    color: colors.text,
+  },
+  instructionItem: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  instructionNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  instructionNumberText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  instructionContent: {
+    flex: 1,
+  },
+  instructionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+    marginBottom: 4,
   },
-  infoCard: {
-    backgroundColor: colors.highlight,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    flexDirection: 'row',
-  },
-  infoContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  infoText: {
+  instructionText: {
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  stepNumberText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  stepText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-    paddingTop: 4,
   },
 });
