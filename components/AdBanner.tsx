@@ -2,18 +2,29 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { colors } from '@/styles/commonStyles';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 interface AdBannerProps {
   position?: 'top' | 'bottom';
 }
 
+// Conditionally import AdMob components only on native platforms
+let BannerAd: any;
+let BannerAdSize: any;
+let TestIds: any;
+
+if (Platform.OS === 'ios' || Platform.OS === 'android') {
+  const googleAds = require('react-native-google-mobile-ads');
+  BannerAd = googleAds.BannerAd;
+  BannerAdSize = googleAds.BannerAdSize;
+  TestIds = googleAds.TestIds;
+}
+
 // AdMob Banner Ad Unit IDs
 // IMPORTANT: Replace these with your actual Ad Unit IDs from AdMob console
 const ADMOB_BANNER_AD_UNIT_ID = Platform.select({
-  ios: __DEV__ ? TestIds.BANNER : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
-  android: __DEV__ ? TestIds.BANNER : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
-  default: TestIds.BANNER,
+  ios: __DEV__ && TestIds ? TestIds.BANNER : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
+  android: __DEV__ && TestIds ? TestIds.BANNER : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
+  default: 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
 });
 
 export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
@@ -42,7 +53,7 @@ export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
 
   return (
     <View style={[styles.container, position === 'top' && styles.topPosition]}>
-      {Platform.OS !== 'web' ? (
+      {Platform.OS !== 'web' && BannerAd ? (
         <BannerAd
           unitId={ADMOB_BANNER_AD_UNIT_ID}
           size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}

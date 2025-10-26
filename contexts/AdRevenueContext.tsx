@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Platform } from 'react-native';
-import mobileAds from 'react-native-google-mobile-ads';
 
 interface AdRevenueData {
   totalViews: number;
@@ -31,6 +30,12 @@ const AD_REVENUE_RATES = {
   interstitial: 0.05, // Interstitial ads moderate
 };
 
+// Conditionally import AdMob only on native platforms
+let mobileAds: any;
+if (Platform.OS === 'ios' || Platform.OS === 'android') {
+  mobileAds = require('react-native-google-mobile-ads').default;
+}
+
 export function AdRevenueProvider({ children }: { children: React.ReactNode }) {
   const [isAdMobInitialized, setIsAdMobInitialized] = useState(false);
   const [adData, setAdData] = useState<AdRevenueData>({
@@ -46,15 +51,15 @@ export function AdRevenueProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize AdMob
   useEffect(() => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== 'web' && mobileAds) {
       console.log('Initializing AdMob...');
       mobileAds()
         .initialize()
-        .then((adapterStatuses) => {
+        .then((adapterStatuses: any) => {
           console.log('AdMob initialized successfully:', adapterStatuses);
           setIsAdMobInitialized(true);
         })
-        .catch((error) => {
+        .catch((error: any) => {
           console.error('AdMob initialization error:', error);
         });
 

@@ -13,11 +13,6 @@ import {
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from './IconSymbol';
 import { useAdRevenue } from '@/contexts/AdRevenueContext';
-import {
-  RewardedAd as GoogleRewardedAd,
-  RewardedAdEventType,
-  TestIds,
-} from 'react-native-google-mobile-ads';
 
 interface RewardedAdProps {
   visible: boolean;
@@ -28,16 +23,28 @@ interface RewardedAdProps {
 
 const { width, height } = Dimensions.get('window');
 
+// Conditionally import AdMob components only on native platforms
+let GoogleRewardedAd: any;
+let RewardedAdEventType: any;
+let TestIds: any;
+
+if (Platform.OS === 'ios' || Platform.OS === 'android') {
+  const googleAds = require('react-native-google-mobile-ads');
+  GoogleRewardedAd = googleAds.RewardedAd;
+  RewardedAdEventType = googleAds.RewardedAdEventType;
+  TestIds = googleAds.TestIds;
+}
+
 // AdMob Rewarded Ad Unit IDs
 // IMPORTANT: Replace these with your actual Ad Unit IDs from AdMob console
 const ADMOB_REWARDED_AD_UNIT_ID = Platform.select({
-  ios: __DEV__ ? TestIds.REWARDED : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
-  android: __DEV__ ? TestIds.REWARDED : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
-  default: TestIds.REWARDED,
+  ios: __DEV__ && TestIds ? TestIds.REWARDED : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
+  android: __DEV__ && TestIds ? TestIds.REWARDED : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
+  default: 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
 });
 
 // Create rewarded ad instance
-let rewardedAd: GoogleRewardedAd | null = null;
+let rewardedAd: any = null;
 
 export default function RewardedAd({
   visible,
@@ -55,7 +62,7 @@ export default function RewardedAd({
 
   // Initialize and load rewarded ad
   useEffect(() => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' || !GoogleRewardedAd) {
       // Web fallback - use simulated ad
       setIsLoading(false);
       setAdLoaded(true);
@@ -81,7 +88,7 @@ export default function RewardedAd({
 
       const earnedRewardListener = rewardedAd.addAdEventListener(
         RewardedAdEventType.EARNED_REWARD,
-        (reward) => {
+        (reward: any) => {
           console.log('User earned reward:', reward);
           setRewardEarned(true);
           trackAdView(adType);
@@ -104,7 +111,7 @@ export default function RewardedAd({
 
       const errorListener = rewardedAd.addAdEventListener(
         RewardedAdEventType.ERROR,
-        (error) => {
+        (error: any) => {
           console.log('Rewarded ad error:', error);
           setAdError(true);
           setIsLoading(false);
@@ -133,7 +140,7 @@ export default function RewardedAd({
 
   // Web/Fallback countdown timer
   useEffect(() => {
-    if (Platform.OS === 'web' && visible && !isLoading && countdown > 0) {
+    if ((Platform.OS === 'web' || !GoogleRewardedAd) && visible && !isLoading && countdown > 0) {
       const timer = setTimeout(() => {
         setCountdown(countdown - 1);
       }, 1000);
@@ -147,7 +154,7 @@ export default function RewardedAd({
   }, [countdown, isLoading, canClose, adType, trackAdView, visible]);
 
   const handleClose = () => {
-    if (canClose || Platform.OS === 'web') {
+    if (canClose || Platform.OS === 'web' || !GoogleRewardedAd) {
       onAdWatched();
       onAdClosed();
     }
@@ -162,7 +169,7 @@ export default function RewardedAd({
   };
 
   // For native platforms, the ad is shown natively, so we don't need to render anything
-  if (Platform.OS !== 'web' && !adError) {
+  if (Platform.OS !== 'web' && GoogleRewardedAd && !adError) {
     return (
       <Modal
         visible={visible && isLoading}
