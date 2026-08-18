@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Aisle Honest — Wedding Planning, Without the Guesswork</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Honest, no-fantasy wedding planning templates: budget tracking, vendor contract review, and day-of timelines.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Cormorant+Garamond:ital@0;1&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF5EE;
+    --paper-card:#FFFDF9;
+    --ink:#2E2A26;
+    --ink-soft:#6B6259;
+    --rose:#C17767;
+    --rose-deep:#9C5645;
+    --sage:#828C6E;
+    --sage-deep:#636B4F;
+    --gold:#B08A4E;
+    --line:#E4D9C9;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  img{max-width:100%;display:block;}
+
+  :focus-visible{
+    outline:2px solid var(--rose-deep);
+    outline-offset:3px;
+  }
+
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 22px;
+  }
+
+  /* ---------- Nav ---------- */
+  header{
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:rgba(250,245,238,0.9);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 22px;
+    max-width:1080px;
+    margin:0 auto;
+  }
+  .brand{
+    font-family:'Playfair Display', serif;
+    font-weight:600;
+    font-size:20px;
+    letter-spacing:0.01em;
+  }
+  .brand em{ color:var(--rose-deep); font-style:italic; }
+  .nav-links{
+    display:flex;
+    gap:26px;
+    font-size:14px;
+    font-weight:500;
+  }
+  .nav-links a{
+    text-decoration:none;
+    color:var(--ink-soft);
+    transition:color .15s;
+  }
+  .nav-links a:hover{ color:var(--rose-deep); }
+  @media (max-width:600px){ .nav-links{ display:none; } }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    padding:72px 22px 56px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute;
+    top:-120px; left:50%;
+    width:640px; height:640px;
+    transform:translateX(-50%);
+    background:radial-gradient(circle, rgba(193,119,103,0.10), transparent 65%);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    color:var(--rose-deep);
+    font-weight:700;
+  }
+  h1{
+    font-family:'Playfair Display', serif;
+    font-weight:600;
+    font-size:clamp(34px,6vw,58px);
+    line-height:1.08;
+    margin:14px 0 18px;
+    position:relative;
+  }
+  h1 em{ font-style:italic; color:var(--rose-deep); }
+  .hero-sub{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:clamp(17px,2.2vw,21px);
+    color:var(--ink-soft);
+    max-width:540px;
+    margin:0 auto 30px;
+    position:relative;
+  }
+  .hero-cta{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    background:var(--ink);
+    color:var(--paper);
+    text-decoration:none;
+    font-weight:600;
+    font-size:14.5px;
+    padding:13px 26px;
+    border-radius:2px;
+    position:relative;
+    transition:transform .15s, background .15s;
+  }
+  .hero-cta:hover{ background:var(--rose-deep); transform:translateY(-1px); }
+  .hero-cta svg{ width:14px; height:14px; }
+
+  .stat-row{
+    display:flex;
+    justify-content:center;
+    gap:44px;
+    margin-top:46px;
+    flex-wrap:wrap;
+  }
+  .stat{
+    text-align:center;
+  }
+  .stat .num{
+    font-family:'Playfair Display', serif;
+    font-size:26px;
+    font-weight:600;
+    color:var(--rose-deep);
+  }
+  .stat .label{
+    font-size:11.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+
+  /* ---------- Section headers ---------- */
+  .section-head{
+    text-align:center;
+    max-width:520px;
+    margin:0 auto 40px;
+  }
+  .section-head .eyebrow{ margin-bottom:8px; display:block; }
+  .section-head h2{
+    font-family:'Playfair Display', serif;
+    font-weight:600;
+    font-size:clamp(26px,4vw,34px);
+    margin:0 0 10px;
+  }
+  .section-head p{
+    font-size:15px;
+    color:var(--ink-soft);
+    line-height:1.6;
+    margin:0;
+  }
+
+  /* ---------- Shop ---------- */
+  .shop{ padding:76px 0 20px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:26px;
+  }
+  @media(min-width:700px){
+    .grid{ grid-template-columns:1fr 1fr; }
+  }
+
+  .product{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:30px 28px 26px;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    transition:box-shadow .18s, transform .18s;
+  }
+  .product:hover{
+    box-shadow:0 18px 34px -22px rgba(46,42,38,0.35);
+    transform:translateY(-2px);
+  }
+  .product-tag{
+    font-size:10.5px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    font-weight:700;
+    color:var(--sage-deep);
+    margin-bottom:14px;
+  }
+  .product.bundle{
+    background:linear-gradient(180deg, #FFFCF6, #FBF0E7);
+    border-color:rgba(176,138,78,0.45);
+  }
+  .product.bundle .product-tag{ color:var(--gold); }
+  .badge{
+    position:absolute;
+    top:24px; right:26px;
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--gold);
+    border:1px solid rgba(176,138,78,0.5);
+    padding:4px 9px;
+    border-radius:20px;
+  }
+  .product h3{
+    font-family:'Playfair Display', serif;
+    font-size:22px;
+    font-weight:600;
+    margin:0 0 10px;
+    padding-right:70px;
+  }
+  .product p{
+    font-size:14.5px;
+    line-height:1.6;
+    color:var(--ink-soft);
+    margin:0 0 22px;
+    flex-grow:1;
+  }
+  .product-foot{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-top:1px solid var(--line);
+    padding-top:18px;
+  }
+  .price{
+    font-family:'Playfair Display', serif;
+    font-size:24px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .price span{
+    font-family:'Work Sans', sans-serif;
+    font-size:12px;
+    font-weight:500;
+    color:var(--ink-soft);
+    margin-left:4px;
+  }
+  .buy-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--rose-deep);
+    color:#fff;
+    text-decoration:none;
+    font-weight:600;
+    font-size:13.5px;
+    padding:11px 20px;
+    border-radius:2px;
+    transition:background .15s, transform .15s;
+  }
+  .buy-btn:hover{ background:#7f4335; transform:translateY(-1px); }
+  .buy-btn svg{ width:13px; height:13px; }
+
+  /* ---------- How it works ---------- */
+  .how{
+    padding:80px 0;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    margin-top:70px;
+    background:rgba(130,140,110,0.05);
+  }
+  .steps{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:30px;
+    max-width:760px;
+    margin:0 auto;
+  }
+  @media(min-width:700px){ .steps{ grid-template-columns:repeat(3,1fr); } }
+  .step{ text-align:center; padding:0 10px; }
+  .step .mark{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:34px;
+    color:var(--rose-deep);
+    margin-bottom:8px;
+  }
+  .step h4{
+    font-family:'Playfair Display', serif;
+    font-size:17px;
+    font-weight:600;
+    margin:0 0 8px;
+  }
+  .step p{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    line-height:1.55;
+    margin:0;
+  }
+
+  /* ---------- Footer ---------- */
+  footer{
+    padding:50px 22px 40px;
+    text-align:center;
+  }
+  footer .brand{ margin-bottom:8px; }
+  footer .fine{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    max-width:440px;
+    margin:0 auto;
+    line-height:1.6;
+  }
+  footer .fine strong{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand">Aisle <em>Honest</em></div>
+    <nav class="nav-links">
+      <a href="#shop">Templates</a>
+      <a href="#how">How it works</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Wedding planning, without the guesswork</div>
+    <h1>Plan the wedding.<br>Skip the <em>markup</em>.</h1>
+    <p class="hero-sub">Real budgets, real vendor red flags, real timelines — built from what couples actually paid, not what Pinterest wishes they did.</p>
+    <a class="hero-cta" href="#shop">
+      See the templates
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <div class="stat-row">
+      <div class="stat"><div class="num">$8K</div><div class="label">avg. tracked budget</div></div>
+      <div class="stat"><div class="num">4</div><div class="label">templates</div></div>
+      <div class="stat"><div class="num">100%</div><div class="label">no fantasy numbers</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="shop" id="shop">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">The templates</span>
+      <h2>Everything, minus the sticker shock</h2>
+      <p>Instant digital delivery after checkout. Pay securely with PayPal — no account needed.</p>
+    </div>
+
+    <div class="grid">
+
+      <div class="product">
+        <div class="product-tag">Budgeting</div>
+        <h3>Wedding Budget Reality Tracker</h3>
+        <p>The template that started it all. Tracks real vendor costs by category, flags overspend the moment it happens, and reveals the "wedding markup" vendors quietly add.</p>
+        <div class="product-foot">
+          <div class="price">$19<span>USD</span></div>
+          <a class="buy-btn" href="https://www.paypal.com/ncp/payment/PLB-FD2GZJSDPYLL" target="_blank" rel="noopener">
+            Buy with PayPal
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="product">
+        <div class="product-tag">Contracts</div>
+        <h3>Vendor Contract Red-Flag Checklist</h3>
+        <p>Line-by-line review checklist for catering, venue, photography, and florist contracts. Catches hidden fees, vague cancellation terms, and common upsell traps before you sign.</p>
+        <div class="product-foot">
+          <div class="price">$12<span>USD</span></div>
+          <a class="buy-btn" href="https://www.paypal.com/ncp/payment/PLB-RVP9BK7FP39K" target="_blank" rel="noopener">
+            Buy with PayPal
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="product">
+        <div class="product-tag">Day-of</div>
+        <h3>Wedding Day Timeline Builder</h3>
+        <p>Hour-by-hour timeline template covering getting-ready, ceremony, photos, and reception — with built-in buffer time so nothing runs late.</p>
+        <div class="product-foot">
+          <div class="price">$15<span>USD</span></div>
+          <a class="buy-btn" href="https://www.paypal.com/ncp/payment/PLB-5TSWFV4PEMS8" target="_blank" rel="noopener">
+            Buy with PayPal
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="product bundle">
+        <span class="badge">Best value</span>
+        <div class="product-tag">Everything</div>
+        <h3>Complete Wedding Planning Bundle</h3>
+        <p>All three templates in one bundle — budget tracker, contract checklist, and day-of timeline. Everything you need to plan without the guesswork, at a lower combined price.</p>
+        <div class="product-foot">
+          <div class="price">$39<span>USD</span></div>
+          <a class="buy-btn" href="https://www.paypal.com/ncp/payment/PLB-8C2KZ9BUCZXR" target="_blank" rel="noopener">
+            Buy with PayPal
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Three steps to less guesswork</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="mark">i</div>
+        <h4>Choose a template</h4>
+        <p>Pick the one you need, or save with the complete bundle.</p>
+      </div>
+      <div class="step">
+        <div class="mark">ii</div>
+        <h4>Pay securely</h4>
+        <p>Checkout runs through PayPal — no account required to pay.</p>
+      </div>
+      <div class="step">
+        <div class="mark">iii</div>
+        <h4>Start planning</h4>
+        <p>Get instant access and start tracking real numbers today.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="brand">Aisle <em>Honest</em></div>
+  <p class="fine">Digital templates delivered instantly after purchase. All payments processed securely by <strong>PayPal</strong>. Questions about an order? Reach out any time.</p>
+</footer>
+
+</body>
+</html>
